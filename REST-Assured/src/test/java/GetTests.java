@@ -8,13 +8,14 @@ import org.junit.jupiter.api.Test;
 
 import java.util.List;
 
+import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
+import static org.hamcrest.core.IsIterableContaining.hasItem;
+import static org.hamcrest.core.StringContains.containsString;
 
 public class GetTests {
     public static Logger logger = LogManager.getLogger(GetTests.class);
-
     public final String root = "https://api.opendota.com/api/";
-
-    public static String leagueName = "BetBoom Esports Tournament";
+    public static String leagueName = "BetBoom Xmas Show";
 
     public final class EndPoints {
         public static String proMatches = "/proMatches";
@@ -25,12 +26,21 @@ public class GetTests {
     public void responseGetPassNonFluentTest() {
         logger.info("Get, non fluent, pass test");
         //искомая команда
-        String teamSearch = "RIP Cyber";
+        String teamSearch = "Unique";
         RequestSpecification request = RestAssured.given();
         request.baseUri(root);
         request.contentType(ContentType.JSON);
         request.then().statusCode(200);
+        request.then().contentType("application/json");
+        request.then().body("league_name", hasItem(leagueName));
+        //за силы света команда не играла на турнирах, поэтому должен быть фейл
+        //request.then().body("radiant_name",hasItem(teamSearch));
+        request.then().body("dire_name", hasItem(teamSearch));
+        request.log().method();
+        request.log().headers();
+        request.log().uri();
         Response response = request.get(EndPoints.proMatches);
+        //response.prettyPrint();
         String contentType = response.header("Content-Type");
         if (contentType.contains("json"))
             logger.info("Content-Type = JSON");
@@ -50,13 +60,19 @@ public class GetTests {
     public void responseGetPassFluentTest() {
         logger.info("Get, fluent, pass test");
         //искомая команда
-        String teamSearch = "RIP Cyber";
+        String teamSearch = "Unique";
         Response response = RestAssured
                 .given()
                 .baseUri(root)
                 .contentType(ContentType.JSON)
-                .expect()
+                .then()
                 .statusCode(200)
+                .contentType("application/json")
+                .body("league_name", hasItem(leagueName))
+                //за силы света команда не играла на турнирах, поэтому должен быть фейл
+                //.body("radiant_name",hasItem(teamSearch))
+                .body("dire_name", hasItem(teamSearch))
+                .log().headers()
                 .when()
                 .get(EndPoints.proMatches);
         String contentType = response.header("Content-Type");
@@ -81,9 +97,14 @@ public class GetTests {
         String teamSearch = "Team Spirit";
         RequestSpecification request = RestAssured.given();
         request.baseUri(root);
-        request.contentType(ContentType.JSON);
         request.then().statusCode(400);
         //request.then().statusCode(200);
+        request.contentType(ContentType.JSON);
+        request.then().contentType("application/json");
+        request.then().body("name", hasItem(teamSearch));
+        request.log().method();
+        request.log().headers();
+        request.log().uri();
         Response response = request.get(EndPoints.proTeams);
         //проверка
         String contentType = response.header("Content-Type");
@@ -109,18 +130,21 @@ public class GetTests {
                 .given()
                 .baseUri(root)
                 .contentType(ContentType.JSON)
-                .expect()
+                .then()
                 .statusCode(502)
                 //.statusCode(200)
+                .contentType("application/json")
+                .body("name", hasItem(teamSearch))
+                .log().headers()
                 .when()
-                .get(EndPoints.proMatches);
+                .get(EndPoints.proTeams);
         String contentType = response.header("Content-Type");
+        //response.prettyPrint();
         if (contentType.contains("json"))
             logger.info("Content-Type = JSON");
         else
             logger.info("Content-Type != JSON");
         logger.info("Content-Type " + contentType);
-        //response.prettyPrint();
         List<String> listTeams = response.jsonPath().getList("name");
         if (listTeams.contains(teamSearch))
             logger.info("Команда " + teamSearch + " найдена");
